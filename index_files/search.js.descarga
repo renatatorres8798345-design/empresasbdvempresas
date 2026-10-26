@@ -1,0 +1,59 @@
+(function (Drupal) {
+  Drupal.behaviors.searchItem = {
+    attach: function attach(context, settings) {
+      var html = document.documentElement;
+      var searchWrap = document.querySelector('.megamenu_search_wrap');
+      var searchInput = document.querySelector('.megamenu_search_wrap input.form-text');
+      var searchButtons = document.querySelectorAll('.search-button');
+      var searchButtonClose = document.querySelector('.search-button-close');
+      var resetButton = context.querySelector('input[id^="edit-reset-search"]');
+      var megamenuSearchbar = document.querySelector('.megamenu_searchbar');
+      if (!searchWrap || !searchInput || !megamenuSearchbar || !resetButton || searchButtons.length === 0 || !searchButtonClose) {
+        return;
+      }
+      searchButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          html.classList.add('open');
+          searchWrap.classList.add('open');
+          searchInput.focus();
+        });
+      });
+      once('search-button-close', searchButtonClose, context).forEach(function (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+          html.classList.remove('open');
+          searchWrap.classList.remove('open');
+          searchInput.value = '';
+          resetButton.click();
+        });
+      });
+      document.addEventListener('click', function (e) {
+        var isClickOutside = !megamenuSearchbar.contains(e.target) && !searchButtons[0].contains(e.target) && !searchButtons[1].contains(e.target);
+        if (html.classList.contains('open') && isClickOutside) {
+          html.classList.remove('open');
+          searchWrap.classList.remove('open');
+          searchInput.value = '';
+          var _resetButton = document.querySelector('input[id^="edit-reset-search"]');
+          if (_resetButton) _resetButton.click();
+        }
+      });
+    }
+  };
+  Drupal.behaviors.searchLink = {
+    attach: function attach(context) {
+      var enlaces = context.querySelectorAll('.megamenu_searchbar__footer a');
+      enlaces.forEach(function (link) {
+        if (!link.hasAttribute('data-add-search-link')) {
+          link.setAttribute('data-add-search-link', 'true');
+          link.addEventListener('click', function (e) {
+            var _input$value;
+            e.preventDefault();
+            var input = context.querySelector('input[name="query"]');
+            var searchValue = (input === null || input === void 0 || (_input$value = input.value) === null || _input$value === void 0 ? void 0 : _input$value.trim()) || '';
+            var newURL = '/search?search=' + encodeURIComponent(searchValue);
+            window.location.href = newURL;
+          });
+        }
+      });
+    }
+  };
+})(Drupal);

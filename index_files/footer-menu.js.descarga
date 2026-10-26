@@ -1,0 +1,18 @@
+(function (Drupal) {
+  'use strict';
+
+  Drupal.behaviors.footerMenu = {
+    attach: function attach(context, settings) {
+      var menuLinks = once('footerMenu', '.footer-menu__item-link', context);
+      menuLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+          link.classList.toggle('active');
+          var submenu = link.nextElementSibling;
+          if (submenu && submenu.classList.contains('footer-menu__submenu')) {
+            submenu.classList.toggle('active');
+          }
+        });
+      });
+    }
+  };
+})(Drupal);

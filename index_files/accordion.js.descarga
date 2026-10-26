@@ -1,0 +1,37 @@
+(function (Drupal, once) {
+  Drupal.behaviors.customAccordion = {
+    attach: function (context) {
+      once('custom-accordion', '.c-accordion', context).forEach((accordion) => {
+        accordion.querySelectorAll('.c-accordion__item').forEach((item) => {
+          const header = item.querySelector('.c-accordion__header button');
+          const content = item.querySelector('.c-accordion__collapse');
+
+          if (!header || !content) {
+            return;
+          }
+
+          header.addEventListener('click', () => {
+            const isOpen = header.getAttribute('aria-expanded') === 'true';
+
+            accordion.querySelectorAll('.c-accordion__collapse').forEach((panel) => {
+              panel.classList.remove('show');
+
+              const prev = panel.previousElementSibling;
+              if (prev && prev.matches('.c-accordion__header')) {
+                const btn = prev.querySelector('button');
+                if (btn) {
+                  btn.setAttribute('aria-expanded', 'false');
+                }
+              }
+            });
+
+            if (!isOpen) {
+              content.classList.add('show');
+              header.setAttribute('aria-expanded', 'true');
+            }
+          });
+        });
+      });
+    }
+  };
+})(Drupal, once);

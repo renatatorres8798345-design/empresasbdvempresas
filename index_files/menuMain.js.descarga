@@ -1,0 +1,306 @@
+(function (Drupal, once) {
+  'use strict';
+
+  Drupal.behaviors.customNavbar = {
+    attach: function (context) {
+
+      once('navbar-toggler', '.navbar-toggler', context).forEach((menuToggler) => {
+        const windowWidth = window.innerWidth;
+        const navbarCollapse = document.querySelector('#CollapsingNavbar');
+        const body = document.body; // Seleccionamos el body
+        const menuMain = document.querySelector('.menu--main');
+        const navbarContainer = document.querySelector('.navbar__container');
+        const menuAccount = document.querySelector('.navbar-info');
+
+        menuToggler.addEventListener('click', function () {
+          const isExpanded = this.getAttribute('aria-expanded') === 'true';
+          this.setAttribute('aria-expanded', !isExpanded);
+          navbarCollapse.classList.toggle('show');
+
+          if (!isExpanded) {
+            closeAllSubmenus();
+            body.classList.add('scroll-off');
+            navbarContainer.classList.add('scroll-off');
+            if (windowWidth < 1024) {
+              menuAccount.classList.add('open');
+            }
+          } else {
+            closeAllSubmenus();
+            body.classList.remove('scroll-off');
+            navbarContainer.classList.remove('scroll-off');
+            menuAccount.classList.remove('open');
+          }
+
+          const firstDropdown = navbarCollapse.querySelector('.dropdown');
+          if (firstDropdown) {
+            const firstToggle = firstDropdown.querySelector('.dropdown-toggle');
+            const firstSubMenu = firstDropdown.querySelector('.dropdown-menu');
+
+            if (firstToggle && firstSubMenu) {
+              if (windowWidth > 1024) {
+                firstToggle.setAttribute('aria-expanded', 'true');
+                firstSubMenu.classList.add('show');
+                adjustNavHeight(firstSubMenu, menuMain);
+              }
+              // Cerrar otros submenús del mismo nivel
+              navbarCollapse.querySelectorAll('.dropdown-menu.show').forEach((menu) => {
+                if (menu !== firstSubMenu) {
+                  menu.classList.remove('show');
+                  menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+                }
+              });
+            }
+
+          }
+        });
+
+        once('back-button', '.back-button', context).forEach((backButton) => {
+          backButton.addEventListener('click', function () {
+            const currentSubmenu = this.closest('.dropdown-menu');
+            if (currentSubmenu) {
+              const parentToggle = currentSubmenu.previousElementSibling;
+
+              if (parentToggle && parentToggle.classList.contains('dropdown-toggle')) {
+                parentToggle.setAttribute('aria-expanded', 'false');
+                currentSubmenu.classList.remove('show'); // Oculta el submenú
+                parentToggle.focus();
+              }
+            }
+
+            resetNavHeight(menuMain);
+          });
+        });
+
+        function closeAllSubmenus() {
+          navbarCollapse.querySelectorAll('.dropdown-menu.show').forEach((menu) => {
+            menu.classList.remove('show');
+            const toggleButton = menu.previousElementSibling;
+            if (toggleButton && toggleButton.classList.contains('dropdown-toggle')) {
+              toggleButton.setAttribute('aria-expanded', 'false');
+            }
+          });
+
+          body.classList.remove('scroll-off');
+        }
+
+      });
+
+      // Manejo de submenús en todos los niveles
+      once('dropdown-toggle', '.dropdown > .dropdown-toggle', context).forEach((toggle) => {
+        toggle.addEventListener('click', function (event) {
+          event.preventDefault();
+          const parent = this.parentElement;
+          const subMenu = parent.querySelector('.dropdown-menu');
+
+          const menuMain = document.querySelector('.menu--main');
+          const isOpen = subMenu.classList.contains('show');
+
+          parent.parentElement
+            .querySelectorAll(':scope > .dropdown .dropdown-menu.show')
+            .forEach((menu) => {
+              if (menu !== subMenu) {
+                menu.classList.remove('show');
+                menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+              }
+            });
+
+          subMenu.classList.toggle('show');
+          this.setAttribute('aria-expanded', !isOpen);
+
+          if (!isOpen) {
+            subMenu.classList.add('show');
+            this.setAttribute('aria-expanded', 'true');
+            adjustNavHeight(subMenu, menuMain);
+            document.body.classList.add('scroll-off');
+          } else {
+            subMenu.classList.remove('show');
+            this.setAttribute('aria-expanded', 'false');
+            adjustNavHeight(subMenu, menuMain);
+            document.body.classList.remove('scroll-off');
+          }
+        });
+
+        // Manejo del teclado dentro de los submenús
+        toggle.addEventListener('keydown', function (event) {
+          const parent = this.parentElement;
+          const subMenu = parent.querySelector('.dropdown-menu');
+          const menuMain = document.querySelector('.menu--main');
+          const isOpen = subMenu && subMenu.classList.contains('show');
+
+          const focusableItems = subMenu ? Array.from(subMenu.querySelectorAll('a, button')) : [];
+
+          function closeSiblingSubmenus() {
+            const siblingDropdowns = parent.parentElement.querySelectorAll(':scope > .dropdown');
+            siblingDropdowns.forEach(sibling => {
+              if (sibling !== parent) {
+                const siblingToggle = sibling.querySelector('.dropdown-toggle');
+                const siblingMenu = sibling.querySelector('.dropdown-menu');
+                if (siblingMenu && siblingMenu.classList.contains('show')) {
+                  siblingMenu.classList.remove('show');
+                  siblingToggle.setAttribute('aria-expanded', 'false');
+                }
+              }
+            });
+          }
+
+          switch (event.key) {
+            case 'ArrowDown':
+              event.preventDefault();
+              if (subMenu && !isOpen) {
+                closeSiblingSubmenus();
+                subMenu.classList.add('show');
+                this.setAttribute('aria-expanded', 'true');
+                adjustNavHeight(subMenu, menuMain);
+                document.body.classList.add('scroll-off');
+              }
+              if (focusableItems.length) {
+                focusableItems[0].focus();
+              }
+              break;
+
+            case 'ArrowUp':
+              event.preventDefault();
+              if (subMenu && !isOpen) {
+                closeSiblingSubmenus();
+                subMenu.classList.add('show');
+                this.setAttribute('aria-expanded', 'true');
+                adjustNavHeight(subMenu, menuMain);
+                document.body.classList.add('scroll-off');
+              }
+              if (focusableItems.length) {
+                focusableItems[focusableItems.length - 1].focus();
+              }
+              break;
+
+            case 'Enter':
+              event.preventDefault();
+              if (subMenu) {
+                if (isOpen) {
+                  subMenu.classList.remove('show');
+                  this.setAttribute('aria-expanded', 'false');
+                  document.body.classList.remove('scroll-off');
+                } else {
+                  closeSiblingSubmenus();
+                  subMenu.classList.add('show');
+                  this.setAttribute('aria-expanded', 'true');
+                  adjustNavHeight(subMenu, menuMain);
+                  document.body.classList.add('scroll-off');
+                  if (focusableItems.length) {
+                    focusableItems[0].focus();
+                  }
+                }
+              }
+              break;
+
+            case 'Escape':
+              if (subMenu && isOpen) {
+                subMenu.classList.remove('show');
+                this.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('scroll-off');
+                this.focus();
+              }
+              break;
+          }
+        });
+
+      });
+
+    },
+  };
+
+  Drupal.behaviors.closeMenu = {
+    attach: function (context) {
+      const navbar = document.querySelector('.header__main .navbar-collapse');
+      const navbarContainer = document.querySelector('.navbar__container');
+      const toggler = document.querySelector('.navbar-toggler');
+      const menuAccount = document.querySelector('.navbar-info');
+      const searchbar = document.querySelector('.megamenu_searchbar'); // Elemento de la barra de búsqueda
+      const body = document.body; // Seleccionamos el body
+
+      function handleClickOutside(event) {
+        if (!event.isTrusted) return;
+
+        if (
+          !navbar.contains(event.target) &&
+          !toggler.contains(event.target) &&
+          !menuAccount.contains(event.target) &&
+          !searchbar.contains(event.target)
+        ) {
+          document.querySelectorAll('.dropdown-menu.show').forEach((menu) => {
+            menu.classList.remove('show');
+            menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+          });
+          navbar.classList.remove('show');
+          navbarContainer.classList.remove('scroll-off');
+          toggler.setAttribute('aria-expanded', 'false');
+          toggler.style.display = 'flex';
+          menuAccount.classList.remove('open');
+          body.classList.remove('scroll-off');
+        }
+      }
+
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'class') {
+            const isMenuOpen = navbar.classList.contains('show');
+
+             document.removeEventListener('click', handleClickOutside);
+
+            if (isMenuOpen) {
+              setTimeout(() => {
+                document.addEventListener('click', handleClickOutside);
+              }, 0);
+            }
+          }
+        });
+      });
+
+      observer.observe(navbar, { attributes: true });
+    },
+  };
+
+
+
+  Drupal.behaviors.menuAcesible = {
+    attach: function (context) {
+
+      const dropdown = document.querySelector('.navbar-collapse');
+      const links = dropdown.querySelectorAll('a');
+      const body = document.body;
+      const navbarContainer = document.querySelector('.navbar__container');
+      const toggler = document.querySelector('.navbar-toggler');
+
+      links.forEach(link => {
+        link.addEventListener('blur', () => {
+          setTimeout(() => {
+            const activeElement = document.activeElement;
+            if (!dropdown.contains(activeElement)) {
+              dropdown.classList.remove('show');
+              body.classList.remove('scroll-off');
+              navbarContainer.classList.remove('scroll-off');
+              if (toggler) {
+                toggler.setAttribute('aria-expanded', 'false');
+              }
+            }
+          }, 10);
+        });
+      });
+
+    },
+  };
+
+  // Common Functions
+  function adjustNavHeight(dropdownMenu, menuMain) {
+    const menuLevel1 = dropdownMenu.querySelector('.dropdown-menu-list.menu-level-1');
+
+    if (menuLevel1) {
+      const newHeight = menuLevel1.scrollHeight;
+      const heightTotal = newHeight + 160;
+      menuMain.style.height = `${heightTotal}px`; // Asigna la altura calculada
+    }
+  }
+
+  function resetNavHeight(menuMain) {
+    menuMain.style.height = ''; // Quita la altura
+  }
+})(Drupal, once);

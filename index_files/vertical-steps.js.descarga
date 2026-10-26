@@ -1,0 +1,99 @@
+(function (Drupal, once) {
+  Drupal.behaviors.verticalSteps = {
+    attach: function (context) {
+      const stepSliderContainer = context.querySelector(".vertical-steps__slider");
+      const autoplay = stepSliderContainer?.dataset?.autoplay === "true";
+      const jumpTime = parseInt(stepSliderContainer?.dataset?.jumptime, 10) || 3000;
+      const items = context.querySelectorAll('.step-item');
+      const dots = context.querySelectorAll('.step-dots .dot');
+      let currentIndex = 0;
+      let interval;
+
+      function setActive(index) {
+        items.forEach((item, i) => {
+          const content = item.querySelector('.step-item__content');
+          const bar = item.querySelector('.progress-bar .item');
+
+          const isActive = i === index;
+
+          item.classList.toggle('is-active', isActive);
+
+          // Progress bar animation
+          bar.style.transition = 'none';
+          bar.style.height = '0%';
+          if (isActive) {
+            // Trigger reflow for transition restart
+            bar.offsetHeight = bar.offsetHeight;
+            bar.style.transition = `height ${autoplay ? jumpTime : 3000}ms linear`;
+            bar.style.height = '100%';
+          }
+
+          // Actualiza aria-selected pero manten todos con tabindex=0
+          content.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          content.setAttribute('tabindex', '0');  // <-- Todos focusables
+        });
+
+        dots.forEach((dot, i) => {
+          const isActive = i === index;
+          dot.classList.toggle('is-active', isActive);
+          dot.setAttribute('aria-current', isActive ? 'step' : 'false');
+          dot.setAttribute('tabindex', '0');  // <-- Todos focusables
+        });
+
+        currentIndex = index;
+      }
+
+      function nextItem() {
+        const nextIndex = (currentIndex + 1) % items.length;
+        setActive(nextIndex);
+      }
+
+      function startAutoPlay() {
+        setActive(currentIndex);
+        interval = setInterval(nextItem, autoplay ? jumpTime : 3000);
+      }
+
+      function stopAutoPlay() {
+        clearInterval(interval);
+      }
+
+      // Click & Keyboard on step-item__content
+      items.forEach((item, index) => {
+        const content = item.querySelector('.step-item__content');
+        content.addEventListener('click', () => {
+          stopAutoPlay();
+          setActive(index);
+          startAutoPlay();
+        });
+        content.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            stopAutoPlay();
+            setActive(index);
+            startAutoPlay();
+          }
+        });
+      });
+
+      // Click & Keyboard on dots
+      dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+          stopAutoPlay();
+          setActive(index);
+          startAutoPlay();
+        });
+        dot.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            stopAutoPlay();
+            setActive(index);
+            startAutoPlay();
+          }
+        });
+      });
+
+      setActive(currentIndex);
+      startAutoPlay();
+    },
+  };
+})(Drupal, once);

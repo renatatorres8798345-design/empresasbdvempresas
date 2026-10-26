@@ -1,0 +1,174 @@
+(function (Drupal, once) {
+  Drupal.behaviors.customTutorials = {
+    // Custom behaviors for tutorials
+    attach: function (context) {
+      // Attach function to initialize within the given context
+      once('customTutorials', '.tutorials-tabs', context).forEach(container => {
+        // Setup tab clicks
+        setupTabClicks(container);
+        // Setup accordion clicks
+        setupAccordionClicks(container);
+        // Setup clicks for single items
+        setupIsSingleClicks(container);
+        // Setup mobile close handler
+        setupMobileCloseHandler(container);
+        // Apply responsive tab state
+        applyResponsiveTabState(container);
+      });
+
+      // Handle window resize
+      window.addEventListener('resize', () => {
+        document.querySelectorAll('.tutorials-tabs').forEach(container => {
+          applyResponsiveTabState(container);
+        });
+      });
+    },
+  };
+
+  // Setup tab clicks
+  function setupTabClicks(container) {
+    container.querySelectorAll('.tab-link').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const tabId = this.dataset.tab;
+        const parent = this.closest('.tabs') || container;
+
+        // Remove 'active' classes from all tabs
+        parent.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        // Hide all tab panels
+        parent.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('show'));
+
+        // Show the selected tab panel
+        const targetPanel = parent.querySelector(`#${tabId}`);
+        if (targetPanel) {
+          targetPanel.classList.add('show');
+        }
+      });
+    });
+  }
+
+  // Setup accordion clicks
+  function setupAccordionClicks(container) {
+    container.querySelectorAll('.accordion-trigger').forEach(trigger => {
+      trigger.addEventListener('click', function () {
+        const currentAccordion = this.closest('.accordion');
+        const currentPanel = currentAccordion.querySelector('.accordion-panel');
+        const currentTabList = currentAccordion.querySelector('.tab-list');
+
+        // Hide other shown elements
+        container.querySelectorAll('.accordion-panel.show').forEach(p => p.classList.remove('show'));
+        container.querySelectorAll('.tab-list.show').forEach(p => p.classList.remove('show'));
+        container.querySelectorAll('.tab-content.show').forEach(p => p.classList.remove('show'));
+
+        // Show current panel and tab list
+        currentPanel.classList.add('show');
+        currentTabList.classList.add('show');
+
+        // Activate first tab if none active and it's mobile
+        const firstTab = currentTabList.querySelector('.tab-link');
+        const anyActive = currentTabList.querySelector('.tab-link.active');
+        if (firstTab && !anyActive && window.innerWidth >= 768) {
+          firstTab.click();
+        }
+      });
+    });
+  }
+
+  // Setup clicks for single items
+  function setupIsSingleClicks(container) {
+    container.querySelectorAll('.tab-header.is-single').forEach(header => {
+      header.addEventListener('click', function () {
+        const tabId = this.dataset.tab;
+        const panel = document.getElementById(tabId);
+
+        // Show selected panel and hide other shown elements
+        if (!panel.classList.contains('show')) {
+          container.querySelectorAll('.tab-content.show').forEach(p => p.classList.remove('show'));
+          container.querySelectorAll('.accordion-panel.show').forEach(p => p.classList.remove('show'));
+          container.querySelectorAll('.tab-list.show').forEach(p => p.classList.remove('show'));
+          container.querySelectorAll('.tab-panel.show').forEach(p => p.classList.remove('show'));
+          container.querySelectorAll('.tab-link.active').forEach(b => b.classList.remove('active'));
+
+          panel.classList.add('show');
+        }
+      });
+    });
+  }
+
+  // Setup mobile close handler
+  function setupMobileCloseHandler(container) {
+    container.querySelectorAll('.tutorial__mobile-close').forEach(closeBtn => {
+      closeBtn.addEventListener('click', function () {
+        const parentPanel = this.closest('.tab-panel, .tab-content, .accordion-panel');
+        if (parentPanel) {
+          parentPanel.classList.remove('show');
+        }
+
+        container.querySelectorAll('.tab-link.active').forEach(tab => tab.classList.remove('active'));
+      });
+    });
+  }
+
+  // Apply responsive tab state
+  function applyResponsiveTabState(container) {
+    const isMobile = window.innerWidth < 768;
+
+    const accordions = container.querySelectorAll('.accordion');
+
+    accordions.forEach((accordion, index) => {
+      const panel = accordion.querySelector('.accordion-panel');
+      const tabList = accordion.querySelector('.tab-list');
+
+      if (!panel || !tabList) return;
+
+      if (index === 0) {
+        panel.classList.add('show');
+        tabList.classList.add('show');
+
+        if (isMobile) {
+          // Remove active tabs inside accordion as well
+          tabList.querySelectorAll('.tab-link.active').forEach(tab => tab.classList.remove('active'));
+          accordion.querySelectorAll('.tab-panel.show').forEach(panel => panel.classList.remove('show'));
+        } else {
+          const firstTab = tabList.querySelector('.tab-link');
+          if (firstTab && !tabList.querySelector('.tab-link.active')) {
+            firstTab.click();
+          }
+        }
+      } else {
+        panel.classList.remove('show');
+        tabList.classList.remove('show');
+        // Remove any active ones in mobile view
+        if (isMobile) {
+          tabList.querySelectorAll('.tab-link.active').forEach(tab => tab.classList.remove('active'));
+          accordion.querySelectorAll('.tab-panel.show').forEach(panel => panel.classList.remove('show'));
+        }
+      }
+    });
+
+    // Tabs without accordion
+    container.querySelectorAll('.tabs:not(.accordion)').forEach(tabsGroup => {
+      if (isMobile) {
+        tabsGroup.querySelectorAll('.tab-panel.show').forEach(panel => panel.classList.remove('show'));
+        tabsGroup.querySelectorAll('.tab-link.active').forEach(tab => tab.classList.remove('active'));
+      } else {
+        const firstTab = tabsGroup.querySelector('.tab-link');
+        if (firstTab && !tabsGroup.querySelector('.tab-link.active')) {
+          firstTab.click();
+        }
+      }
+    });
+
+    // is-single
+    if (isMobile) {
+      container.querySelectorAll('.tab-header.is-single').forEach(header => {
+        const tabId = header.dataset.tab;
+        const panel = document.getElementById(tabId);
+        if (panel) {
+          panel.classList.remove('show');
+        }
+      });
+    }
+  }
+})(Drupal, once);

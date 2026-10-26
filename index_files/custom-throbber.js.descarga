@@ -1,0 +1,14 @@
+(function (Drupal) {
+  Drupal.theme.ajaxProgressIndicatorFullscreen = function (message) {
+    return `
+      <div id="alertControl" class="alertControl" role="status">
+        <div class="lds-roller">
+          <div></div><div></div><div></div><div></div>
+          <div></div><div></div><div></div><div></div>
+          <h5>Cargando Información</h5>
+        </div>
+      </div>
+    `;
+  };
+  Drupal.theme.ajaxProgressThrobber = () => '<div id="alertControl" class="alertControl">\n        <div class="lds-roller">\n          <div></div><div></div><div></div><div></div>\n          <div></div><div></div><div></div><div></div>\n          <h5>Cargando Información</h5>\n        </div>\n      </div>';
+})(Drupal);

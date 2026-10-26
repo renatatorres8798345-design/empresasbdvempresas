@@ -1,0 +1,76 @@
+(function (Drupal, once) {
+  Drupal.behaviors.customDropdown = {
+    attach: function (context) {
+      const dropdowns = once("dropdown", ".c-dropdown", context);
+
+      dropdowns.forEach((dropdown) => {
+        const toggler = dropdown.querySelector(".c-dropdown__toogler");
+        const menu = dropdown.querySelector(".c-dropdown__menu");
+        const closeBtn = menu?.querySelector(".c-dropdown__menu__close");
+
+        if (!toggler || !menu) return;
+
+        toggler.setAttribute("aria-haspopup", "true");
+        toggler.setAttribute("aria-expanded", "false");
+        toggler.setAttribute("tabindex", "0");
+        menu.setAttribute("role", "menu");
+
+        once("dropdownClick", toggler).forEach((btn) => {
+          btn.addEventListener("click", function (event) {
+            if (window.innerWidth < 1024) {
+              event.preventDefault();
+              const isOpen = menu.classList.toggle("open");
+              toggler.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            }
+          });
+        });
+
+        toggler.addEventListener("keydown", function (event) {
+          const isDesktop = window.innerWidth >= 1024;
+          if (!isDesktop) return;
+
+          if (["Enter", " ", "ArrowDown"].includes(event.key)) {
+            event.preventDefault();
+            menu.classList.add("open");
+            toggler.setAttribute("aria-expanded", "true");
+
+            const firstItem = menu.querySelector("a, button, [tabindex]:not([tabindex='-1'])");
+            if (firstItem) firstItem.focus();
+          }
+
+          if (event.key === "Escape") {
+            menu.classList.remove("open");
+            toggler.setAttribute("aria-expanded", "false");
+            toggler.focus();
+          }
+        });
+
+        // Nuevo: cerrar el menú si se pierde el foco hacia fuera
+        menu.addEventListener("focusout", function (event) {
+          const relatedTarget = event.relatedTarget;
+
+          // Si el nuevo foco está fuera del dropdown, cierra el menú
+          if (!dropdown.contains(relatedTarget)) {
+            menu.classList.remove("open");
+            toggler.setAttribute("aria-expanded", "false");
+          }
+        });
+
+        if (closeBtn) {
+          closeBtn.addEventListener("click", function () {
+            menu.classList.remove("open");
+            toggler.setAttribute("aria-expanded", "false");
+            toggler.focus();
+          });
+        }
+
+        document.addEventListener("click", function (event) {
+          if (!dropdown.contains(event.target)) {
+            menu.classList.remove("open");
+            toggler.setAttribute("aria-expanded", "false");
+          }
+        });
+      });
+    },
+  };
+})(Drupal, once);

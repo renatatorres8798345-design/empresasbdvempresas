@@ -1,0 +1,19 @@
+(function (Drupal, once) {
+  "use strict";
+
+  Drupal.behaviors.buttonRedesign = {
+    attach: function (context) {
+      once("button-redesign", ".c-button--redesign", context).forEach(
+        (button) => {
+          button.addEventListener(
+            "mouseenter",
+            function () {
+              this.classList.add("c-button--has-hovered");
+            },
+            { once: true },
+          );
+        },
+      );
+    },
+  };
+})(Drupal, once);

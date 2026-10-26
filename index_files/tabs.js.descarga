@@ -1,0 +1,78 @@
+(function (Drupal, once) {
+  Drupal.behaviors.customTabs = {
+    attach: function (context) {
+      once('custom-tabs', '.c-tabs', context).forEach((tabsContainer) => {
+        const tabButtons = tabsContainer.querySelectorAll('.nav-link');
+        const tabPanes = tabsContainer.querySelectorAll('.tab-pane');
+        const seeMoreButton = tabsContainer.querySelector('#btn-more');
+        const tabContent = tabsContainer.querySelector('.tab-content');
+
+        function resetAndEvaluate(activePane) {
+          if (!seeMoreButton) return;
+
+          tabContent.style.maxHeight = null;
+          tabContent.classList.remove('max-height-transition');
+          tabContent.classList.add('max-height-size');
+          seeMoreButton.setAttribute('aria-expanded', 'false');
+
+          const constrainedHeight = parseInt(window.getComputedStyle(tabContent).height, 10) || 0;
+          const paneHeight = activePane.offsetHeight;
+          const shouldHide = paneHeight <= constrainedHeight;
+
+          seeMoreButton.classList.toggle('hidden', shouldHide);
+
+          if (!shouldHide) {
+            tabContent.classList.add('max-height-transition');
+          } else {
+            tabContent.classList.remove('max-height-transition');
+          }
+        }
+
+        function getActivePane() {
+          return tabContent.querySelector('.tab-pane.show.active');
+        }
+
+        tabButtons.forEach((button) => {
+          button.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-bs-target');
+            const targetPane = tabsContainer.querySelector(targetId);
+
+            tabButtons.forEach((btn) => btn.classList.remove('active'));
+            tabPanes.forEach((pane) => pane.classList.remove('show', 'active'));
+
+            this.classList.add('active');
+            targetPane.classList.add('show', 'active');
+
+            if (seeMoreButton) {
+              resetAndEvaluate(targetPane);
+            }
+          });
+        });
+
+        if (seeMoreButton) {
+          const activePane = getActivePane();
+          if (activePane) {
+            resetAndEvaluate(activePane);
+          }
+
+          seeMoreButton.addEventListener('click', function () {
+            const activePane = getActivePane();
+            if (!activePane) return;
+
+            if (tabContent.classList.contains('max-height-size')) {
+              const fullHeight = activePane.scrollHeight +
+                parseInt(window.getComputedStyle(tabContent).paddingBottom, 10) || 0;
+              tabContent.style.maxHeight = fullHeight + 'px';
+              tabContent.classList.remove('max-height-size');
+              seeMoreButton.setAttribute('aria-expanded', 'true');
+            } else {
+              tabContent.style.maxHeight = null;
+              tabContent.classList.add('max-height-size');
+              seeMoreButton.setAttribute('aria-expanded', 'false');
+            }
+          });
+        }
+      });
+    }
+  };
+})(Drupal, once);

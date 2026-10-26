@@ -1,0 +1,18 @@
+(function (Drupal, once) {
+  Drupal.behaviors.productHeight = {
+    attach: function attach(context) {
+      var benefitCards = document.querySelectorAll('.product-card__benefits');
+      var maxHeight = 0;
+      benefitCards.forEach(function (card) {
+        card.style.minHeight = 'auto';
+        var height = card.offsetHeight;
+        if (height > maxHeight) {
+          maxHeight = height;
+        }
+      });
+      benefitCards.forEach(function (card) {
+        card.style.minHeight = "".concat(maxHeight, "px");
+      });
+    }
+  };
+})(Drupal, once);
